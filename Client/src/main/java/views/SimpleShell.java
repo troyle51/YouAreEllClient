@@ -66,11 +66,11 @@ public class SimpleShell {
             // Specific Commands.
 
             // ids
-//                if (list.contains("ids")) {
-//                    String results = urll.get_ids();
-//                    SimpleShell.prettyPrint(results);
-//                    continue;
-//                }
+                if (list.contains("ids")) {
+                    String results = urll.get_ids();
+                    SimpleShell.prettyPrint(results);
+                    continue;
+                }
 
             // messages
             if (list.contains("messages")) {

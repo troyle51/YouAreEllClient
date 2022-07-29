@@ -1,8 +1,9 @@
 package controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import models.Id;
+
 import org.apache.http.HttpEntity;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -12,45 +13,49 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import youareell.User;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+
 //import spiffyUrlManipulator;
 
 public class ServerController {
     private String rootURL = "http://zipcode.rocks:8085";
-    private ServerController svr = new ServerController();
+    private static ServerController svr = new ServerController();
 
     public ServerController(){
 
     }
 
-    public ServerController shared() {
+    public static ServerController shared() {
         return svr;
     }
 
     public String idGet(String url) {
-        CloseableHttpClient client = HttpClients.createDefault();
-        String results = "";
-
+        String responseBody;
         try {
+        CloseableHttpClient client = HttpClients.createDefault();
         HttpGet request = new HttpGet(rootURL + "/" + url);
-        CloseableHttpResponse response = client.execute(request);
-        HttpEntity entity = response.getEntity();
+            System.out.println("Executing request " + request.getRequestLine());
 
-        if(response.getStatusLine().getStatusCode() != 200){
-            System.out.println("Connection is bad" + response.getStatusLine().getStatusCode());
-        }
-        results = EntityUtils.toString(entity);
-            System.out.println(results);
+            ResponseHandler<String> responseHandler = response -> {
+                int status = response.getStatusLine().getStatusCode();
+                if(status >= 200 && status < 300) {
+                    HttpEntity entity = response.getEntity();
+                    return entity != null ? EntityUtils.toString(entity) : null;
+                } else {
+                    throw new ClientProtocolException("Unexpected response status: " + status);
+                }
+            };
 
-            response.close();
+            responseBody = client.execute(request, responseHandler);
+            System.out.println("-----------------------");
+            //System.out.println(responseBody);
             client.close();
-
+            //return responseBody.toString();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -58,36 +63,39 @@ public class ServerController {
         // send the server a get with url
         // return json from server
 
-        return results;
+        return responseBody;
     }
-    ObjectMapper mapper = new ObjectMapper();
-    User user = createDummyUser();
-    Id id = new Id();
-    public String idPost() {
-        CloseableHttpClient client = HttpClients.createDefault();
-        String results = "";
 
+    public String idPost(String url) {
         try {
-        HttpPost httpPost = new HttpPost(rootURL);
+        CloseableHttpClient client = HttpClients.createDefault();
+        HttpPost httpPost = new HttpPost(rootURL + "/" + url);
+
+        //Post Headers
+            httpPost.setHeader("Accept", "application/json"); //Accept : what you are expecting to receive
+            httpPost.setHeader("Content-type", "application/json"); //Content-Type : what you are sending to the server
 
 
-            mapper.writeValue(new File("scratch.json"), user);
-            mapper.writeValueAsString(user);
-            String jsonInString;
+            //ObjectMapper mapper = new ObjectMapper();
+            String json = "{ \"userid\" : \"-\", \"name\" : \"Testroy\", \"github\" : \"BMWHub\" }";
 
-            jsonInString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(user);
-            System.out.println(jsonInString);
 
-        StringEntity json = new StringEntity(mapper.writeValueAsString(user), ContentType.APPLICATION_JSON);
-        httpPost.setEntity(json);
-        CloseableHttpResponse response = client.execute(httpPost);
-        HttpEntity entity = response.getEntity();
+        StringEntity stringEntity = new StringEntity(json);
+        httpPost.setEntity(stringEntity);
 
-//        if(response.getStatusLine().getStatusCode() != 200){
-//            System.out.println("Connection is bad" + response.getStatusLine().getStatusCode());
-//            return;
-//        }
-            response.close();
+            ResponseHandler<String> responseHandler = response -> {
+                int status = response.getStatusLine().getStatusCode();
+                if(status >= 200 && status < 300) {
+                    HttpEntity entity = response.getEntity();;
+                    return entity != null ? EntityUtils.toString(entity) : null;
+                } else {
+                    throw new ClientProtocolException("Unexpected response status: " + status);
+                }
+            };
+            String responseBody = client.execute(httpPost, responseHandler);
+            System.out.println("-----------------------");
+            System.out.println(responseBody);
+
             client.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -97,15 +105,16 @@ public class ServerController {
         // request
         // reply
         // return json
-        return results;
+
+
+        return null;
     }
     public String idPut() {
         CloseableHttpClient client = HttpClients.createDefault();
-        String results = "";
 
         try {
         HttpPut httpPut = new HttpPut(rootURL);
-        httpPut.setEntity(new StringEntity(String.valueOf(user), ContentType.APPLICATION_JSON));
+        httpPut.setEntity(new StringEntity(String.valueOf(httpPut), ContentType.APPLICATION_JSON));
         CloseableHttpResponse response = client.execute(httpPut);
 
         response.close();
@@ -115,24 +124,13 @@ public class ServerController {
             throw new RuntimeException(e);
         }
         // url -> /ids/
-        return results;
+        return null;
     }
 
-    private static User createDummyUser(){
-        User user = new User();
-
-        user.setName("Troy");
-        user.setAge(33);
-
-        List<String> msg = new ArrayList<String>();
-        msg.add("Hello Jackson 1");
-        msg.add("Hello Jackson 2");
-        msg.add("Hello Jackson 3");
-
-        user.setMessages(msg);
-
-        return user;
-    }
+//    public static void main(String[] args) {
+//      svr.idGet("ids");
+//      svr.idPost("ids");
+//    }
 
 }
 
