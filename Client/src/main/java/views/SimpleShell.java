@@ -79,6 +79,11 @@ public class SimpleShell {
                 continue;
             }
             // you need to add a bunch more.
+            if (list.contains("postMessages")) {
+                String results = urll.get_messages();
+                SimpleShell.prettyPrint(results);
+                continue;
+            }
 
             //!! command returns the last command in history
             if (list.get(list.size() - 1).equals("!!")) {
